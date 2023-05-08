@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get latest commit date
+        id: get_commit_date
         run:  |
               commit_date=$(curl -s https://api.github.com/repos/enricoros/big-agi/commits/main | jq -r '.commit.committer.date')
               echo "$commit_date"
-              echo "{name}={commit_date}" >> $GITHUB_OUTPUT
-        id: get_commit_date
 
       - name: Check if commit date has changed
         run:  |
+              echo "$commit_date"
               previous_commit_date=$(cat previous_commit_date.txt 2>/dev/null || echo "")
               if [ "$previous_commit_date" != "${{ steps.get_commit_date.outputs.commit_date }}" ]; then
                 echo "Commit date has changed"
@@ -26,6 +26,18 @@ jobs:
               else
                 echo "Commit date has not changed"
               fi
+
+
+
+      # - name: Archive production artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: dist-without-markdown
+      #     path: |
+      #       dist
+      #       !dist/**/*.md
+
+      
       # - name: Get feed content and compare
       #   id:   compare
       #   run:  |
