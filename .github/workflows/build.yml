@@ -13,7 +13,8 @@ jobs:
       - name: Get latest commit date
         run:  |
               commit_date=$(curl -s https://api.github.com/repos/enricoros/big-agi/commits/main | jq -r '.commit.committer.date')
-              echo "::set-output name=commit_date::$commit_date"
+              echo "$commit_date"
+              echo "{name}={commit_date}" >> $GITHUB_OUTPUT
         id: get_commit_date
 
       - name: Check if commit date has changed
