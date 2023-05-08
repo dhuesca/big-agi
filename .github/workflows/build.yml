@@ -7,29 +7,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Get feed content and compare
-        id:   compare
+      - name: Get latest commit date
         run:  |
-              apt-get update
-              apt-get install curl jq -y
-              previous_commit_date=$(cat previous_commit_date.txt)
-              commit_date=$(curl -s "https://api.github.com/repos/enricoros/big-agi/commits/main" | jq -r '.commit.committer.date')
-              if [ "$commit_date" == "$previous_commit_date" ]; then
-                exit 0
+              commit_date=$(curl -s https://api.github.com/repos/enricoros/big-agi/commits/main | jq -r '.commit.committer.date')
+              echo "::set-output name=commit_date::$commit_date"
+        id: get_commit_date
+
+      - name: Check if commit date has changed
+        run:  |
+              previous_commit_date=$(cat previous_commit_date.txt 2>/dev/null || echo "")
+              if [ "$previous_commit_date" != "${{ steps.get_commit_date.outputs.commit_date }}" ]; then
+                echo "Commit date has changed"
+                echo "${{ steps.get_commit_date.outputs.commit_date }}" > previous_commit_date.txt
               else
-                echo "$commit_date" > previous_commit_date.txt
-                exit 1
+                echo "Commit date has not changed"
               fi
+      # - name: Get feed content and compare
+      #   id:   compare
+      #   run:  |
+      #         apt-get update
+      #         apt-get install curl jq -y
+      #         previous_commit_date=$(cat previous_commit_date.txt)
+      #         commit_date=$(curl -s "https://api.github.com/repos/enricoros/big-agi/commits/main" | jq -r '.commit.committer.date')
+      #         if [ "$commit_date" == "$previous_commit_date" ]; then
+      #           exit 0
+      #         else
+      #           echo "$commit_date" > previous_commit_date.txt
+      #           exit 1
+      #         fi
       
-      - name: Manage artifact file
-        if:   steps.compare.outcome == 'failure'
-        run:  |
-              echo "$commit_date" > previous_commit_date.txt
-              echo "::set-output name=last_updated::$(cat previous_commit_date.txt)"
-        uses: actions/upload-artifact@v2
-        with:
-          name: last_updated
-          path: previous_commit_date.txt
+      # - name: Manage artifact file
+      #   if:   steps.compare.outcome == 'failure'
+      #   run:  |
+      #         echo "$commit_date" > previous_commit_date.txt
+      #         echo "::set-output name=last_updated::$(cat previous_commit_date.txt)"
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: last_updated
+      #     path: previous_commit_date.txt
 
       # - name: Login to Docker
       #   if: steps.compare.outcome == 'failure'
